@@ -1,0 +1,22 @@
+{{define "title"}}Home{{end}}
+
+   {{define "main"}}
+      <h2>Tables</h2>
+      {{if .Entries}}
+      <table> 
+         <tr>
+            <th>Title</th>
+            <th>Created</th>
+            <th>Id</th>
+         </tr>
+         {{range .Entries}}
+         <tr>
+            <td><a href='/entry/view/{{.Id}}'>{{.Title}}</a></td>
+            <td>#{{.Id}}</td>
+         </tr>
+         {{end}}
+      </table>
+      {{else}}
+         <p>There's nothing to see here... yet!</p>
+   {{end}} 
+{{end}}
