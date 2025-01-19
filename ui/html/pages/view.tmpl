@@ -1,0 +1,58 @@
+{{define "title"}}Entry #{{.Entry.Id}}{{end}}
+
+{{define "main"}}
+    {{with .Entry}}
+        {{if .}}
+            <article class="textbox">
+                <h2><a href='/entry/view/{{.Id}}'>{{.Title}}</a></h2>
+                <div class="content-wrapper">
+                    <div class="text-content">
+                        {{range .Tables}}
+                           <table class="db-table">
+                               <thead>
+                                   <tr>
+                                     <th colspan="4">
+                                        {{.TableName}} 
+                                        <p><a href="/entry/view/table?db={{$.Entry.Title}}&table={{.TableName}}">View Table Contents</a></p>
+                                        ({{.EntryCount}} entries
+                                        {{if and (.EntryCount) (.LatestEntry.Id)}}
+                                          - Latest: #{{.LatestEntry.Id}} {{.LatestEntry.Title}}
+                                        {{end}})
+                                     </th>
+                                   </tr>
+                                   <tr>
+                                       <th>Column</th>
+                                       <th>Type</th>
+                                       <th>Null</th>
+                                       <th>Key</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+                                   {{range .Columns}}
+                                       <tr>
+                                           <td>{{.Field}}</td>
+                                           <td>{{.Type}}</td>
+                                           <td>{{.Null}}</td>
+                                           <td>{{.Key}}</td>
+                                       </tr>
+                                   {{end}}
+                               </tbody>
+                           </table>
+                       {{end}}
+                      
+                       </div>
+                </div>
+            </article>
+        {{else}}
+            <article class="textbox">
+                <p>There were some difficulties loading this content. Please try again later or look elsewhere.</p>
+            </article>
+        {{end}}
+    {{else}}
+        <article class="textbox">
+            <p>Post not found.</p>
+        </article>
+    {{end}}
+{{end}}
+
+
