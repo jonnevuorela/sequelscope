@@ -8,6 +8,18 @@
                 <div class="content-wrapper">
                     <div class="text-content">
                         {{range .Tables}}
+                           {{if .LatestQueries}}
+                              <div class="query-log">
+                                 <h4>Query: </h4>
+                                  <ul>
+                                        {{range .LatestQueries}}
+                                            <li><code>{{.Query}}</code> ({{.Timestamp.Format "15:04:05"}})</li>
+                                        {{end}}
+                                    </ul>
+                                </div>
+                            {{end}}
+
+
                            <table class="db-table">
                                <thead>
                                    <tr>
