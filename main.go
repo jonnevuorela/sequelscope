@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -17,31 +16,28 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-mysql-org/go-mysql/mysql"
+	"github.com/go-mysql-org/go-mysql/replication"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 	"github.com/justinas/alice"
 	"go-dash.jonnevuorela.com/ui"
 )
 
 type application struct {
-	errorLog      *log.Logger
-	infoLog       *log.Logger
-	db            *sql.DB
-	entries       []*Entry
-	templateCache map[string]*template.Template
-	queryLogs     chan QueryLog
-	latestQueries []QueryLog
-}
-type QueryLog struct {
-	Query     string
-	Timestamp time.Time
-	Database  string
+	errorLog       *log.Logger
+	infoLog        *log.Logger
+	db             *sql.DB
+	entries        []*Entry
+	templateCache  map[string]*template.Template
+	binlogSyncer   *replication.BinlogSyncer
+	binlogStreamer *replication.BinlogStreamer
 }
 type templateData struct {
 	CurrentYear int
 	Entry       *Entry
 	Entries     []*Entry
 	TableData   *TableData
-	queryLogs   []QueryLog
 }
 type Column struct {
 	Field   string
@@ -53,11 +49,10 @@ type Column struct {
 }
 
 type Table struct {
-	TableName     string
-	Columns       []Column
-	EntryCount    int
-	LatestEntry   LatestRow
-	LatestQueries []QueryLog
+	TableName   string
+	Columns     []Column
+	EntryCount  int
+	LatestEntry LatestRow
 }
 
 type TableData struct {
@@ -84,12 +79,17 @@ type LatestRow struct {
 }
 
 func main() {
+	err := godotenv.Load(".env")
 	addr := flag.String("addr", ":4000", "HTTP network address")
-	dsn := flag.String("dsn", "web:pass@tcp(localhost:3306)/", "MySQL data source name")
+	dsn := flag.String("dsn", os.Getenv("WEB_DSN"), "MySQL data source name")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "\033[42;30mINFO\033[0m\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "\033[41;30mERROR\033[0m\t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	db, err := sql.Open("mysql", *dsn)
 	if err != nil {
@@ -112,15 +112,9 @@ func main() {
 		errorLog:      errorLog,
 		infoLog:       infoLog,
 		templateCache: templateCache,
-		queryLogs:     make(chan QueryLog, 100),
-		latestQueries: make([]QueryLog, 0),
 	}
 
 	app.getDatabases()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go app.watchQueryLog(ctx)
 
 	log.Printf("Starting server on http://localhost%s", *addr)
 	err = http.ListenAndServe(*addr, app.routes())
@@ -144,6 +138,13 @@ func (app *application) routes() http.Handler {
 
 	standard := alice.New(app.recoverPanic, app.logRequest)
 	return standard.Then(mux)
+}
+
+func (app *application) setupBinlogWatcher() error {
+	cfg := replication.BinlogSyncerConfig{
+		ServerID: 100,
+	}
+
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -302,22 +303,11 @@ func (app *application) dbTitleView(writer http.ResponseWriter, request *http.Re
 
 		latest.Title = string(titleBytes)
 
-		var tableQueries []QueryLog
-		for _, q := range app.latestQueries {
-			if strings.Contains(strings.ToLower(q.Query), strings.ToLower(tableName)) {
-				tableQueries = append(tableQueries, q)
-			}
-			if len(tableQueries) >= 5 {
-				break
-			}
-		}
-
 		table := Table{
-			TableName:     tableName,
-			Columns:       columns,
-			EntryCount:    count,
-			LatestEntry:   latest,
-			LatestQueries: tableQueries,
+			TableName:   tableName,
+			Columns:     columns,
+			EntryCount:  count,
+			LatestEntry: latest,
 		}
 		entry.Tables = append(entry.Tables, table)
 	}
@@ -326,76 +316,7 @@ func (app *application) dbTitleView(writer http.ResponseWriter, request *http.Re
 	data.Entry = entry
 	app.render(writer, http.StatusOK, "view.tmpl", data)
 }
-func (app *application) watchQueryLog(ctx context.Context) {
-	_, err := app.db.Exec(`
-        CREATE TABLE IF NOT EXISTS mysql.general_log (
-            event_time TIMESTAMP NOT NULL,
-            user_host MEDIUMTEXT NOT NULL,
-            thread_id BIGINT(21) UNSIGNED NOT NULL,
-            server_id INTEGER UNSIGNED NOT NULL,
-            command_type VARCHAR(64) NOT NULL,
-            argument MEDIUMTEXT NOT NULL
-        )
-    `)
-	if err != nil {
-		app.errorLog.Printf("Error creating general_log table: %v", err)
-		return
-	}
 
-	_, err = app.db.Exec("SET GLOBAL general_log = 'ON'")
-	if err != nil {
-		app.errorLog.Printf("Error enabling general_log: %v", err)
-		return
-	}
-
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	var lastEventTime time.Time
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			rows, err := app.db.Query(`
-                SELECT event_time, argument, thread_id 
-                FROM mysql.general_log 
-                WHERE event_time > ? 
-                AND argument NOT LIKE '%general_log%'
-                AND argument NOT LIKE 'SELECT event_time%'
-                ORDER BY event_time DESC
-                LIMIT 10
-            `, lastEventTime)
-			if err != nil {
-				app.errorLog.Printf("Error querying general_log: %v", err)
-				continue
-			}
-
-			for rows.Next() {
-				var ql QueryLog
-				var threadID int64
-				err := rows.Scan(&ql.Timestamp, &ql.Query, &threadID)
-				if err != nil {
-					app.errorLog.Printf("Error scanning row: %v", err)
-					continue
-				}
-
-				if strings.Contains(ql.Query, "general_log") {
-					continue
-				}
-
-				app.latestQueries = append([]QueryLog{ql}, app.latestQueries...)
-				if len(app.latestQueries) > 100 {
-					app.latestQueries = app.latestQueries[:100]
-				}
-
-				lastEventTime = ql.Timestamp
-			}
-			rows.Close()
-		}
-	}
-}
 func (app *application) render(w http.ResponseWriter, status int, page string, data *templateData) {
 	ts, ok := app.templateCache[page]
 	if !ok {
