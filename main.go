@@ -162,8 +162,6 @@ func (app *application) routes() http.Handler {
 }
 
 func (app *application) handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	app.infoLog.Printf("Websocket connection attempt from %s", r.RemoteAddr)
-
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		app.errorLog.Printf("Websocket upgrade failed: %v", err)
@@ -174,10 +172,7 @@ func (app *application) handleWebSocket(w http.ResponseWriter, r *http.Request) 
 	app.clients[conn] = true
 	app.clientsMux.Unlock()
 
-	app.infoLog.Printf("Websocket connection established with %s", r.RemoteAddr)
-
 	defer func() {
-		app.infoLog.Printf("Closing websocket connection with %s", r.RemoteAddr)
 		conn.Close()
 		app.clientsMux.Lock()
 		delete(app.clients, conn)
@@ -187,7 +182,6 @@ func (app *application) handleWebSocket(w http.ResponseWriter, r *http.Request) 
 	// keeping connection
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
-			app.infoLog.Printf("Websocket read error: %v", err)
 			break
 		}
 	}
@@ -212,13 +206,13 @@ func (app *application) setupBinlogWatcher() {
 		app.errorLog.Printf("Test ping failed: %v", err)
 		return
 	}
-	app.infoLog.Printf("Successfully connected to MySQL")
-	var file string
-	var pos uint32
-	var binlogDoDB sql.NullString
-	var binlogIgnoreDB sql.NullString
-	var executedGtidSet sql.NullString
-
+	var (
+		file            string
+		pos             uint32
+		binlogDoDB      sql.NullString
+		binlogIgnoreDB  sql.NullString
+		executedGtidSet sql.NullString
+	)
 	err = testDb.QueryRow("SHOW MASTER STATUS").Scan(
 		&file,
 		&pos,
@@ -230,13 +224,6 @@ func (app *application) setupBinlogWatcher() {
 		app.errorLog.Printf("Direct SHOW MASTER STATUS failed: %v", err)
 		return
 	}
-	app.infoLog.Printf("Successfully got binlog position directly: %s:%d", file, pos)
-
-	password := dsn.Passwd
-	if password == "" {
-		app.errorLog.Printf("No password in DSN")
-		return
-	}
 
 	syncerConfig := replication.BinlogSyncerConfig{
 		ServerID: 100,
@@ -244,38 +231,25 @@ func (app *application) setupBinlogWatcher() {
 		Host:     "localhost",
 		Port:     3306,
 		User:     dsn.User,
-		Password: password,
+		Password: dsn.Passwd,
 	}
-
-	app.infoLog.Printf("Creating syncer with User: %s, Password length: %d",
-		syncerConfig.User, len(syncerConfig.Password))
 
 	app.binlogSyncer = replication.NewBinlogSyncer(syncerConfig)
 
-	// Create proper binlog position
-	binlogPos := mysql.Position{
-		Name: file,
-		Pos:  pos,
-	}
-
-	streamer, err := app.binlogSyncer.StartSync(binlogPos)
+	streamer, err := app.binlogSyncer.StartSync(mysql.Position{Name: file, Pos: pos})
 	if err != nil {
 		app.errorLog.Printf("error starting binlog sync: %v", err)
 		return
 	}
 
 	app.binlogStreamer = streamer
-
-	if app.binlogStreamer == nil {
-		app.errorLog.Printf("binlog streamer is nil")
-		return
-	}
+	app.infoLog.Printf("Binlog setup complete")
 
 	go func() {
 		for {
 			ev, err := app.binlogStreamer.GetEvent(context.Background())
 			if err != nil {
-				app.errorLog.Printf("error getting binlog event: %v", err)
+				app.errorLog.Printf("Binlog event error: %v", err)
 				continue
 			}
 			switch e := ev.Event.(type) {
@@ -287,49 +261,22 @@ func (app *application) setupBinlogWatcher() {
 		}
 	}()
 }
-func (app *application) getCurrentBinlogPos() (mysql.Position, error) {
-	var (
-		pos            mysql.Position
-		file           string
-		position       uint32
-		binlogDoDB     string
-		binlogIgnoreDB string
-		executeGtidSet string
-	)
-	row := app.db.QueryRow("SHOW MASTER STATUS")
-	err := row.Scan(&file, &position, &binlogDoDB, &binlogIgnoreDB, &executeGtidSet)
-	if err != nil {
-		return pos, err
-	}
-	return mysql.Position{
-		Name: file,
-		Pos:  position,
-	}, nil
-
-}
 
 func (app *application) handleRowsEvent(e *replication.RowsEvent) {
-	app.infoLog.Printf("Table %s changed: %v rows affected",
-		e.Table.Table, len(e.Rows))
-
 	message := map[string]string{
 		"type":     "row_change",
 		"table":    string(e.Table.Table),
 		"database": string(e.Table.Schema),
 	}
-
 	app.broadcastChange(message)
 }
 
 func (app *application) handleQueryEvent(e *replication.QueryEvent) {
-	app.infoLog.Printf("Query executed: %s", string(e.Query))
-
 	message := map[string]string{
 		"type":     "query",
 		"database": string(e.Schema),
 		"query":    string(e.Query),
 	}
-
 	app.broadcastChange(message)
 }
 
