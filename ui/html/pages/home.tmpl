@@ -1,22 +1,27 @@
 {{define "title"}}Home{{end}}
 
-   {{define "main"}}
-      <h2>Databases found on the server</h2>
-      {{if .Entries}}
-      <table> 
-         <tr>
+{{define "main"}}
+    <h2>Databases found on the server</h2>
+    {{if .Entries}}
+    <table> 
+        <tr>
             <th>Title</th>
-            <th>Created</th>
+            <th>Tables</th>
             <th>Id</th>
-         </tr>
-         {{range .Entries}}
-         <tr>
+        </tr>
+        {{range .Entries}}
+        {{if and (ne .Title "information_schema") (ne .Title "performance_schema")}}
+        <tr>
             <td><a href='/entry/view/{{.Id}}'>{{.Title}}</a></td>
+            <td title="{{range .Tables}}{{.TableName}}, {{end}}">
+                {{formatTables .Tables}}
+            </td>
             <td>#{{.Id}}</td>
-         </tr>
-         {{end}}
-      </table>
-      {{else}}
-         <p>There's nothing to see here... yet!</p>
-   {{end}} 
+        </tr>
+        {{end}}
+        {{end}}
+    </table>
+    {{else}}
+        <p>There's nothing to see here... yet!</p>
+    {{end}} 
 {{end}}

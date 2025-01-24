@@ -1,17 +1,16 @@
 body {
    background: rgb(0, 0, 0);
-   background: linear-gradient(0deg, rgba(0, 0, 0, 1) 5%, rgba(30, 30, 30, 1) 20%, rgba(30, 30, 30, 1) 80%, rgba(0, 0, 0, 1) 95%);
-   color: white;
+   background: linear-gradient(0deg, rgb(0, 0, 0) 5%, rgb(23, 24, 25) 20%, rgb(23, 24, 25) 80%, rgb(0, 0, 0) 95%);
+   color: #e8e6e3;
    overflow-x: hidden;
    overflow-y: scroll;
    height: 100%;
-
 }
 
 html {
    height: 100%;
+   border-color: #736b5e;
 }
-
 
 * {
    box-sizing: border-box;
@@ -20,8 +19,6 @@ html {
    font-size: 18px;
    font-family: "Ubuntu Mono", monospace;
 }
-
-
 
 header,
 nav,
@@ -90,7 +87,7 @@ nav {
    padding-bottom: 15px;
    background: rgba(0, 0, 0, 0);
    height: 60px;
-   color: #6A6C6F;
+   color: #e8e6e3;
 }
 
 nav a {
@@ -134,7 +131,7 @@ a.button,
 input[type="submit"] {
    background-color: #3d4a5e;
    border-radius: 3px;
-   color: #FFFFFF;
+   color: #e8e6e3;
    padding: 18px 27px;
    border: none;
    display: inline-block;
@@ -145,7 +142,7 @@ input[type="submit"] {
 a.button:hover,
 input[type="submit"]:hover {
    background-color: #39465a;
-   color: #FFFFFF;
+   color: #e8e6e3;
    cursor: pointer;
    text-decoration: none;
    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
@@ -156,7 +153,7 @@ form div {
 }
 
 form div:last-child {
-   border-top: 1px dashed #E4E5E7;
+   border-top: 1px dashed #736b5e;
 }
 
 form input[type="radio"] {
@@ -174,9 +171,9 @@ form input[type=text],
 form input[type="password"],
 form input[type="email"],
 textarea {
-   color: #6A6C6F;
-   background: #232323;
-   border: 1px solid #303030;
+   color: #e8e6e3;
+   background: #181a1b;
+   border: 1px solid #736b5e;
    border-radius: 3px;
 }
 
@@ -186,15 +183,13 @@ form label {
 }
 
 .textbox {
-   color: rgb(230, 230, 255);
+   color: rgb(186, 211, 255);
    font-family: 'lucida bright', serif;
    text-shadow: 0px 0px 10px rgba(0, 0, 0, 1);
    background: rgb(0, 0, 0);
-   background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.3) 10%, rgba(0, 0, 0, 0.3) 90%, rgba(0, 0, 0, 0) 100%);
+   background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(24, 26, 27, 0.3) 10%, rgba(24, 26, 27, 0.3) 90%, rgba(0, 0, 0, 0) 100%);
    display: block;
-   /* Change from table to block */
    width: 100%;
-   /* Make it fill the available space */
    padding-bottom: 50px;
    margin-top: 30px;
    margin-bottom: 30px;
@@ -207,8 +202,7 @@ form label {
    display: block;
    margin: auto;
    width: 40%;
-   border: solid 1px black;
-
+   border: solid 1px #736b5e;
 }
 
 .content-wrapper {
@@ -232,11 +226,8 @@ form label {
 .terminal-style {
    font-family: 'Ubuntu Mono', monospace;
    color: #62CB31;
-   /* Match the header link color */
-   font-size: 36px;
-   /* Match h1 a size */
+   font-size: 32px;
    font-weight: lighter;
-   /* Match h1 a weight */
    display: inline-block;
    height: 36px;
 }
@@ -247,22 +238,13 @@ form label {
    font-weight: bold;
    font-size: inherit;
    color: #62CB31;
-   /* Match the color */
    vertical-align: baseline;
 }
 
 .terminal-style a {
    text-decoration: none;
    color: #62CB31;
-   /* Match the color */
 }
-
-/*
-.terminal-style a:hover {
-   color: #4EB722;
-   text-decoration: none;
-}
-*/
 
 .terminal-style .prompt {
    font-weight: bold;
@@ -308,20 +290,20 @@ button:hover {
 }
 
 .post {
-   background-color: #FFFFFF;
-   border: 1px solid #E4E5E7;
+   background-color: #181a1b;
+   border: 1px solid #736b5e;
    border-radius: 3px;
 }
 
 .post pre {
    padding: 18px;
-   border-top: 1px solid #E4E5E7;
-   border-bottom: 1px solid #E4E5E7;
+   border-top: 1px solid #736b5e;
+   border-bottom: 1px solid #736b5e;
 }
 
 .post .metadata {
-   background-color: #F7F9FA;
-   color: #6A6C6F;
+   background-color: #1e2021;
+   color: #e8e6e3;
    padding: 0.75em 18px;
    overflow: auto;
 }
@@ -331,7 +313,7 @@ button:hover {
 }
 
 .post .metadata strong {
-   color: #34495E;
+   color: #e8e6e3;
 }
 
 .post .metadata time {
@@ -347,7 +329,7 @@ button:hover {
 }
 
 div.flash {
-   color: #FFFFFF;
+   color: #e8e6e3;
    font-weight: bold;
    background-color: #34495E;
    padding: 18px;
@@ -356,7 +338,7 @@ div.flash {
 }
 
 div.error {
-   color: #FFFFFF;
+   color: #e8e6e3;
    background-color: #C0392B;
    padding: 18px;
    margin-bottom: 36px;
@@ -365,9 +347,8 @@ div.error {
 }
 
 table {
-   background: white;
-   border: 1px solid #E4E5E7;
-   border-collapse: collapse;
+   background-color: #181a1b;
+   border-color: #736b5e;
    width: 100%;
 }
 
@@ -380,58 +361,64 @@ th {
 th:last-child,
 td:last-child {
    text-align: right;
-   color: #6A6C6F;
+   color: #e8e6e3;
 }
 
 tr {
-   border-bottom: 1px solid #E4E5E7;
+   border-bottom: 1px solid #736b5e;
 }
 
 tr:nth-child(2n) {
-   background-color: #F7F9FA;
-}
-.db-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1em 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    table-layout: fixed;
+   background-color: #1e2021;
 }
 
-.db-table th, 
+.db-table {
+   width: 100%;
+   border-collapse: collapse;
+   margin: 1em 0;
+   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+   table-layout: fixed;
+}
 
 .db-table td, .db-table th {
-    padding: 8px;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 200px; }
+   padding: 8px;
+   text-align: left;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+   max-width: 200px;
+}
 
 .db-table td:hover {
-    overflow: visible;
-    white-space: normal;
-    word-break: break-all;
+   overflow: visible;
+   white-space: normal;
+   word-break: break-all;
 }
 
 .db-table thead th {
-    background-color: #f5f5f5;
-    font-weight: bold;
+   background-color: rgb(30, 32, 33);
+   color: #e8e6e3;
+   font-weight: bold;
 }
 
 .db-table thead th[colspan] {
-    background-color: #e0e0e0;
+   background-color: rgb(42, 45, 47);
 }
 
 .db-table tbody tr:hover {
-    background-color: #f9f9f9;
+   background-color: #2a2e31;
 }
 
 footer {
    padding-top: 17px;
    padding-bottom: 15px;
-   background: #000000;
+   background: #181a1b;
    height: 60px;
-   color: #6A6C6F;
+   color: #e8e6e3;
    text-align: center;
+}
+
+::selection {
+   background-color: #004daa;
+   color: #e8e6e3;
 }
