@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
-	"os"
+	"strconv"
+	"strings"
 
 	"github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/go-mysql-org/go-mysql/replication"
@@ -11,13 +12,13 @@ import (
 )
 
 func (app *application) setupBinlogWatcher() {
-	dsn, err := mysqlDriver.ParseDSN(os.Getenv("REPL_DSN"))
+	dsn, err := mysqlDriver.ParseDSN(app.dsn)
 	if err != nil {
 		app.errorLog.Printf("error parsing DSN: %v", err)
 		return
 	}
 
-	testDb, err := sql.Open("mysql", os.Getenv("REPL_DSN"))
+	testDb, err := sql.Open("mysql", app.dsn)
 	if err != nil {
 		app.errorLog.Printf("Test connection failed: %v", err)
 		return
@@ -48,11 +49,14 @@ func (app *application) setupBinlogWatcher() {
 		return
 	}
 
+	addr := strings.SplitAfter(dsn.Addr, ":")
+	port, err := strconv.ParseUint(addr[1], 10, 16)
+
 	syncerConfig := replication.BinlogSyncerConfig{
 		ServerID: 100,
 		Flavor:   "mysql",
-		Host:     "localhost",
-		Port:     3306,
+		Host:     addr[0],
+		Port:     uint16(port),
 		User:     dsn.User,
 		Password: dsn.Passwd,
 	}
